@@ -6,7 +6,7 @@
             {
                 field: "NumberOfEmployees",
                 valueFormatter: params => {
-                    return params.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    return String(params.value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 }
             },
             { field: "Industry" },

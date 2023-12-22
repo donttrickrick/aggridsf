@@ -19,6 +19,7 @@
         };
 
         var gridDiv = document.querySelector('#myGrid');
-        new agGrid.Grid(gridDiv, gridOptions);
+        const grid = new agGrid.Grid(gridDiv, gridOptions);
+        grid.gridOptions.api.sizeColumnsToFit();
     }
 })

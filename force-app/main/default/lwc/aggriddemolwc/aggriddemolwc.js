@@ -1,8 +1,9 @@
 import { LightningElement } from 'lwc';
-import { loadScript } from "lightning/platformResourceLoader";
-import agGridCommunityJs from '@salesforce/resourceUrl/agGridCommunityJs';
+import { loadScript, loadStyle } from "lightning/platformResourceLoader";
 
 export default class Aggriddemolwc extends LightningElement {
+    static renderMode = "light"; // the default is 'shadow'
+
     columnDefs = [
         { headerName: "Make", field: "make" },
         { headerName: "Model", field: "model" },
@@ -19,17 +20,19 @@ export default class Aggriddemolwc extends LightningElement {
 
     connectedCallback() {
         this.gridOptions = { columnDefs: this.columnDefs, rowData: this.rowData };
+    
+        // debugger;
+        // Promise.all([
+        //     loadStyle(this, agThemeAlpineCss),
+        //     loadScript(this, agGridCommunityJs),
+        // ]).then(() => {
+        //         const eGridDiv = this.querySelector("div");
+        //         new agGrid.Grid(eGridDiv, this.gridOptions);
+        //     })
+        //     .catch(error => {
+        //         console.log('error ' + error);
+        //     })
     }
 
-    renderedCallback() {
-        loadScript(this, agGridCommunityJs)
-            .then(() => {
-                const eGridDiv = this.template.querySelector("div[data-id='myGrid']");
-                new agGrid.Grid(eGridDiv, this.gridOptions);
-            })
-            .catch(error => {
-                console.log('error ' + error);
-            })
-
-    }
+    
 }
