@@ -1,6 +1,11 @@
 import { LightningElement } from 'lwc';
 import { loadScript, loadStyle } from "lightning/platformResourceLoader";
 
+
+import agGridCommunityJs from '@salesforce/resourceUrl/agGridCommunityJs';
+import agThemeAlpineCss from '@salesforce/resourceUrl/agThemeAlpineCss';
+
+
 export default class Aggriddemolwc extends LightningElement {
     static renderMode = "light"; // the default is 'shadow'
 
@@ -21,17 +26,17 @@ export default class Aggriddemolwc extends LightningElement {
     connectedCallback() {
         this.gridOptions = { columnDefs: this.columnDefs, rowData: this.rowData };
     
-        // debugger;
-        // Promise.all([
-        //     loadStyle(this, agThemeAlpineCss),
-        //     loadScript(this, agGridCommunityJs),
-        // ]).then(() => {
-        //         const eGridDiv = this.querySelector("div");
-        //         new agGrid.Grid(eGridDiv, this.gridOptions);
-        //     })
-        //     .catch(error => {
-        //         console.log('error ' + error);
-        //     })
+        debugger;
+        Promise.all([
+            loadStyle(this, agThemeAlpineCss),
+            loadScript(this, agGridCommunityJs),
+        ]).then(() => {
+                const eGridDiv = this.querySelector("div");
+                new agGrid.createGrid(eGridDiv, this.gridOptions);
+            })
+            .catch(error => {
+                console.log('error ' + error);
+            })
     }
 
     
