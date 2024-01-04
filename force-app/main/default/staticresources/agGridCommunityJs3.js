@@ -2480,6 +2480,9 @@ class Context {
             throw Error(`Can't wire to bean since it is null`);
         }
         this.wireBeans([bean], afterPreCreateCallback);
+
+        console.log(bean.constructor.name);
+
         return bean;
     }
     wireBeans(beanInstances, afterPreCreateCallback) {
@@ -9074,6 +9077,9 @@ let AgStackComponentsRegistry = class AgStackComponentsRegistry extends _context
         this.componentsMappedByName[classUpperCase] = componentMeta.componentClass;
     }
     getComponentClass(htmlTag) {
+        // debugger
+        // console.log('htmlTag:');
+        // console.log(htmlTag);
         return this.componentsMappedByName[htmlTag];
     }
 };
@@ -9312,7 +9318,7 @@ class ReadOnlyFloatingFilter extends _widgets_component_mjs__WEBPACK_IMPORTED_MO
     constructor() {
         super(/* html */ `
             <div class="ag-floating-filter-input" role="presentation">
-                <ag-input-text-field ref="eFloatingFilterText"></ag-input-text-field>
+                <div data-node-name="ag-input-text-field" data-ref="eFloatingFilterText"></div>
             </div>`);
     }
     // this is a user component, and IComponent has "public destroy()" as part of the interface.
@@ -9446,10 +9452,20 @@ class Component extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODULE_1__["Bean
         // we MUST take a copy of the list first, as the 'swapComponentForNode' adds comments into the DOM
         // which messes up the traversal order of the children.
         const childNodeList = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_3__["copyNodeList"])(parentNode.childNodes);
+
+        
+
         childNodeList.forEach(childNode => {
             if (!(childNode instanceof HTMLElement)) {
                 return;
             }
+
+            if(this.eGui.classList[0] === 'ag-paging-panel') {
+                const tag = childNode.tagName;
+                const ref = childNode.dataset.ref;
+                console.log(`${tag} - ${ref}`);
+            }
+
             const childComp = this.createComponentFromElement(childNode, childComp => {
                 // copy over all attributes, including css classes, so any attributes user put on the tag
                 // wll be carried across
@@ -9474,8 +9490,9 @@ class Component extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODULE_1__["Bean
         });
     }
     createComponentFromElement(element, afterPreCreateCallback, paramsMap) {
-        const key = element.nodeName;
-        const componentParams = paramsMap ? paramsMap[element.getAttribute('ref')] : undefined;
+        const key = (element.dataset.nodeName || element.nodeName).toUpperCase();
+        // const key = element.nodeName;
+        const componentParams = paramsMap ? paramsMap[element.getAttribute('data-ref')] : undefined;
         const ComponentClass = this.agStackComponentsRegistry.getComponentClass(key);
         if (ComponentClass) {
             Component.elementGettingCreated = element;
@@ -9556,14 +9573,14 @@ class Component extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODULE_1__["Bean
             // the element. otherwise no way of components putting ref=xxx on the top
             // level element as querySelector only looks at children.
             const topLevelRefMatch = querySelector.refSelector
-                && this.getAttribute('ref') === querySelector.refSelector;
+                && this.getAttribute('data-ref') === querySelector.refSelector;
             if (topLevelRefMatch) {
                 setResult(this.eGui);
             }
             else {
                 // otherwise use querySelector, which looks at children
                 // IMPORTANT: aura has the correct querySelector, however lwc don't have the right querySelector, returning null result
-                debugger;
+                // debugger;
                 const resultOfQuery = this.eGui.querySelector(querySelector.querySelector);
                 if (resultOfQuery) {
                     setResult(resultOfQuery.__agComponent || resultOfQuery);
@@ -9668,7 +9685,7 @@ class Component extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODULE_1__["Bean
         return eGui ? eGui.getAttribute(key) : null;
     }
     getRefElement(refName) {
-        return this.queryForHtmlElement(`[ref="${refName}"]`);
+        return this.queryForHtmlElement(`[data-ref="${refName}"]`);
     }
 }
 Component.EVENT_DISPLAYED_CHANGED = 'displayedChanged';
@@ -10581,7 +10598,7 @@ function ensureDomOrder(eContainer, eChild, eChildBefore) {
         // otherwise put at start
         if (eContainer.firstChild && eContainer.firstChild !== eChild) {
             // insert it at the first location
-            eContainer.insertAdjacentElement('afterbegin', eChild);
+            eContainer.insertAdjacentHTML('afterbegin', eChild.outerHTML);
         }
     }
     if (eChildHasFocus && focusedEl && Object(_browser_mjs__WEBPACK_IMPORTED_MODULE_0__["browserSupportsPreventScroll"])()) {
@@ -10600,12 +10617,12 @@ function setDomChildOrder(eContainer, orderedChildren) {
 function insertWithDomOrder(eContainer, eToInsert, eChildBefore) {
     if (eChildBefore) {
         // if previous element exists, just slot in after the previous element
-        eChildBefore.insertAdjacentElement('afterend', eToInsert);
+        eChildBefore.insertAdjacentHTML('afterend', eToInsert.outerHTML);
     }
     else {
         if (eContainer.firstChild) {
             // insert it at the first location
-            eContainer.insertAdjacentElement('afterbegin', eToInsert);
+            eContainer.insertAdjacentHTML('afterbegin', eToInsert.outerHTML);
         }
         else {
             // otherwise eContainer is empty, so just append it
@@ -11913,7 +11930,7 @@ function QuerySelector(selector) {
     return querySelectorFunc.bind(this, selector, undefined);
 }
 function RefSelector(ref) {
-    return querySelectorFunc.bind(this, `[ref=${ref}]`, ref);
+    return querySelectorFunc.bind(this, `[data-ref=${ref}]`, ref);
 }
 function querySelectorFunc(selector, refSelector, classPrototype, methodOrAttributeName, index) {
     if (selector === null) {
@@ -13330,7 +13347,7 @@ class ProvidedFilter extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_6__
         }
         const templateString = /* html */ `
             <form class="ag-filter-wrapper">
-                <div class="ag-filter-body-wrapper ag-${this.getCssIdentifier()}-body-wrapper" ref="eFilterBody">
+                <div class="ag-filter-body-wrapper ag-${this.getCssIdentifier()}-body-wrapper" data-ref="eFilterBody">
                     ${this.createBodyTemplate()}
                 </div>
             </form>`;
@@ -13419,7 +13436,7 @@ class ProvidedFilter extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_6__
             /* html */
             `<button
                     type="${buttonType}"
-                    ref="${type}FilterButton"
+                    data-ref="${type}FilterButton"
                     class="ag-button ag-standard-button ag-filter-apply-panel-button"
                 >${text}
                 </button>`);
@@ -13785,14 +13802,14 @@ var __decorate = (undefined && undefined.__decorate) || function (decorators, ta
 
 const RESIZE_CONTAINER_STYLE = 'ag-resizer-wrapper';
 const RESIZE_TEMPLATE = /* html */ `<div class="${RESIZE_CONTAINER_STYLE}">
-        <div ref="eTopLeftResizer" class="ag-resizer ag-resizer-topLeft"></div>
-        <div ref="eTopResizer" class="ag-resizer ag-resizer-top"></div>
-        <div ref="eTopRightResizer" class="ag-resizer ag-resizer-topRight"></div>
-        <div ref="eRightResizer" class="ag-resizer ag-resizer-right"></div>
-        <div ref="eBottomRightResizer" class="ag-resizer ag-resizer-bottomRight"></div>
-        <div ref="eBottomResizer" class="ag-resizer ag-resizer-bottom"></div>
-        <div ref="eBottomLeftResizer" class="ag-resizer ag-resizer-bottomLeft"></div>
-        <div ref="eLeftResizer" class="ag-resizer ag-resizer-left"></div>
+        <div data-ref="eTopLeftResizer" class="ag-resizer ag-resizer-topLeft"></div>
+        <div data-ref="eTopResizer" class="ag-resizer ag-resizer-top"></div>
+        <div data-ref="eTopRightResizer" class="ag-resizer ag-resizer-topRight"></div>
+        <div data-ref="eRightResizer" class="ag-resizer ag-resizer-right"></div>
+        <div data-ref="eBottomRightResizer" class="ag-resizer ag-resizer-bottomRight"></div>
+        <div data-ref="eBottomResizer" class="ag-resizer ag-resizer-bottom"></div>
+        <div data-ref="eBottomLeftResizer" class="ag-resizer ag-resizer-bottomLeft"></div>
+        <div data-ref="eLeftResizer" class="ag-resizer ag-resizer-left"></div>
     </div>`;
 class PositionableFeature extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODULE_0__["BeanStub"] {
     constructor(element, config) {
@@ -14203,14 +14220,14 @@ class PositionableFeature extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODULE
     createResizeMap() {
         const eGui = this.element;
         this.resizerMap = {
-            topLeft: { element: eGui.querySelector('[ref=eTopLeftResizer]') },
-            top: { element: eGui.querySelector('[ref=eTopResizer]') },
-            topRight: { element: eGui.querySelector('[ref=eTopRightResizer]') },
-            right: { element: eGui.querySelector('[ref=eRightResizer]') },
-            bottomRight: { element: eGui.querySelector('[ref=eBottomRightResizer]') },
-            bottom: { element: eGui.querySelector('[ref=eBottomResizer]') },
-            bottomLeft: { element: eGui.querySelector('[ref=eBottomLeftResizer]') },
-            left: { element: eGui.querySelector('[ref=eLeftResizer]') }
+            topLeft: { element: eGui.querySelector('[data-ref=eTopLeftResizer]') },
+            top: { element: eGui.querySelector('[data-ref=eTopResizer]') },
+            topRight: { element: eGui.querySelector('[data-ref=eTopRightResizer]') },
+            right: { element: eGui.querySelector('[data-ref=eRightResizer]') },
+            bottomRight: { element: eGui.querySelector('[data-ref=eBottomRightResizer]') },
+            bottom: { element: eGui.querySelector('[data-ref=eBottomResizer]') },
+            bottomLeft: { element: eGui.querySelector('[data-ref=eBottomLeftResizer]') },
+            left: { element: eGui.querySelector('[data-ref=eLeftResizer]') }
         };
     }
     addResizers() {
@@ -14621,10 +14638,10 @@ var __decorate = (undefined && undefined.__decorate) || function (decorators, ta
 
 const TEMPLATE = /* html */ `
     <div class="ag-picker-field" role="presentation">
-        <div ref="eLabel"></div>
-            <div ref="eWrapper" class="ag-wrapper ag-picker-field-wrapper ag-picker-collapsed">
-            <div ref="eDisplayField" class="ag-picker-field-display"></div>
-            <div ref="eIcon" class="ag-picker-field-icon" aria-hidden="true"></div>
+        <div data-ref="eLabel"></div>
+            <div data-ref="eWrapper" class="ag-wrapper ag-picker-field-wrapper ag-picker-collapsed">
+            <div data-ref="eDisplayField" class="ag-picker-field-display"></div>
+            <div data-ref="eIcon" class="ag-picker-field-icon" aria-hidden="true"></div>
         </div>
     </div>`;
 class AgPickerField extends _agAbstractField_mjs__WEBPACK_IMPORTED_MODULE_0__["AgAbstractField"] {
@@ -15451,9 +15468,9 @@ class AgAbstractInputField extends _agAbstractField_mjs__WEBPACK_IMPORTED_MODULE
     constructor(config, className, inputType = 'text', displayFieldTag = 'input') {
         super(config, /* html */ `
             <div role="presentation">
-                <div ref="eLabel" class="ag-input-field-label"></div>
-                <div ref="eWrapper" class="ag-wrapper ag-input-wrapper" role="presentation">
-                    <${displayFieldTag} ref="eInput" class="ag-input-field-input"></${displayFieldTag}>
+                <div data-ref="eLabel" class="ag-input-field-label"></div>
+                <div data-ref="eWrapper" class="ag-wrapper ag-input-wrapper" role="presentation">
+                    <${displayFieldTag} data-ref="eInput" class="ag-input-field-input"></${displayFieldTag}>
                 </div>
             </div>`, className);
         this.inputType = inputType;
@@ -15659,8 +15676,8 @@ class DateFloatingFilter extends _floating_provided_simpleFloatingFilter_mjs__WE
     constructor() {
         super(/* html */ `
             <div class="ag-floating-filter-input" role="presentation">
-                <ag-input-text-field ref="eReadOnlyText"></ag-input-text-field>
-                <div ref="eDateWrapper" style="display: flex;"></div>
+                <div data-node-name="ag-input-text-field" data-ref="eReadOnlyText"></div>
+                <div data-ref="eDateWrapper" style="display: flex;"></div>
             </div>`);
     }
     getDefaultFilterOptions() {
@@ -15895,7 +15912,7 @@ class DefaultDateComponent extends _widgets_component_mjs__WEBPACK_IMPORTED_MODU
     constructor() {
         super(/* html */ `
             <div class="ag-filter-filter">
-                <ag-input-text-field class="ag-date-filter" ref="eDateInput"></ag-input-text-field>
+                <div data-node-name="ag-input-text-field" class="ag-date-filter" data-ref="eDateInput"></div>
             </div>`);
     }
     // this is a user component, and IComponent has "public destroy()" as part of the interface.
@@ -16570,7 +16587,7 @@ class FloatingFilterTextInputService extends _context_beanStub_mjs__WEBPACK_IMPO
 class TextInputFloatingFilter extends _simpleFloatingFilter_mjs__WEBPACK_IMPORTED_MODULE_4__["SimpleFloatingFilter"] {
     postConstruct() {
         this.setTemplate(/* html */ `
-            <div class="ag-floating-filter-input" role="presentation" ref="eFloatingFilterInputContainer"></div>
+            <div class="ag-floating-filter-input" role="presentation" data-ref="eFloatingFilterInputContainer"></div>
         `);
     }
     getDefaultDebounceMs() {
@@ -17143,13 +17160,13 @@ class HeaderComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_8__["Co
     }
 }
 HeaderComp.TEMPLATE = `<div class="ag-cell-label-container" role="presentation">
-            <span ref="eMenu" class="ag-header-icon ag-header-cell-menu-button" aria-hidden="true"></span>
-            <div ref="eLabel" class="ag-header-cell-label" role="presentation">
-                <span ref="eText" class="ag-header-cell-text"></span>
-                <span ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon" aria-hidden="true"></span>
-                <ag-sort-indicator ref="eSortIndicator"></ag-sort-indicator>
-            </div>
-        </div>`;
+        <span data-ref="eMenu" class="ag-header-icon ag-header-cell-menu-button" aria-hidden="true"></span>
+        <div data-ref="eLabel" class="ag-header-cell-label" role="presentation">
+            <span data-ref="eText" class="ag-header-cell-text"></span>
+            <span data-ref="eFilter" class="ag-header-icon ag-header-label-icon ag-filter-icon" aria-hidden="true"></span>
+            <div data-node-name="ag-sort-indicator" data-ref="eSortIndicator"></div>
+        </div>
+    </div>`;
 __decorate([
     Object(_context_context_mjs__WEBPACK_IMPORTED_MODULE_0__["Autowired"])('sortController')
 ], HeaderComp.prototype, "sortController", void 0);
@@ -17451,11 +17468,11 @@ class SortIndicatorComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_
     }
 }
 SortIndicatorComp.TEMPLATE = `<span class="ag-sort-indicator-container">
-            <span ref="eSortOrder" class="ag-sort-indicator-icon ag-sort-order ag-hidden" aria-hidden="true"></span>
-            <span ref="eSortAsc" class="ag-sort-indicator-icon ag-sort-ascending-icon ag-hidden" aria-hidden="true"></span>
-            <span ref="eSortDesc" class="ag-sort-indicator-icon ag-sort-descending-icon ag-hidden" aria-hidden="true"></span>
-            <span ref="eSortMixed" class="ag-sort-indicator-icon ag-sort-mixed-icon ag-hidden" aria-hidden="true"></span>
-            <span ref="eSortNone" class="ag-sort-indicator-icon ag-sort-none-icon ag-hidden" aria-hidden="true"></span>
+            <span data-ref="eSortOrder" class="ag-sort-indicator-icon ag-sort-order ag-hidden" aria-hidden="true"></span>
+            <span data-ref="eSortAsc" class="ag-sort-indicator-icon ag-sort-ascending-icon ag-hidden" aria-hidden="true"></span>
+            <span data-ref="eSortDesc" class="ag-sort-indicator-icon ag-sort-descending-icon ag-hidden" aria-hidden="true"></span>
+            <span data-ref="eSortMixed" class="ag-sort-indicator-icon ag-sort-mixed-icon ag-hidden" aria-hidden="true"></span>
+            <span data-ref="eSortNone" class="ag-sort-indicator-icon ag-sort-none-icon ag-hidden" aria-hidden="true"></span>
         </span>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_3__["RefSelector"])('eSortOrder')
@@ -17607,10 +17624,10 @@ class HeaderGroupComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_8_
         this.addOrRemoveCssClass('ag-sticky-label', !((_a = columnGroup.getColGroupDef()) === null || _a === void 0 ? void 0 : _a.suppressStickyLabel));
     }
 }
-HeaderGroupComp.TEMPLATE = `<div class="ag-header-group-cell-label" ref="agContainer" role="presentation">
-            <span ref="agLabel" class="ag-header-group-text" role="presentation"></span>
-            <span ref="agOpened" class="ag-header-icon ag-header-expand-icon ag-header-expand-icon-expanded"></span>
-            <span ref="agClosed" class="ag-header-icon ag-header-expand-icon ag-header-expand-icon-collapsed"></span>
+HeaderGroupComp.TEMPLATE = `<div class="ag-header-group-cell-label" data-ref="agContainer" role="presentation">
+            <span data-ref="agLabel" class="ag-header-group-text" role="presentation"></span>
+            <span data-ref="agOpened" class="ag-header-icon ag-header-expand-icon ag-header-expand-icon-expanded"></span>
+            <span data-ref="agClosed" class="ag-header-icon ag-header-expand-icon ag-header-expand-icon-collapsed"></span>
         </div>`;
 __decorate([
     Object(_context_context_mjs__WEBPACK_IMPORTED_MODULE_0__["Autowired"])("columnModel")
@@ -17687,7 +17704,7 @@ class LargeTextCellEditor extends _widgets_popupComponent_mjs__WEBPACK_IMPORTED_
     }
 }
 LargeTextCellEditor.TEMPLATE = `<div class="ag-large-text">
-            <ag-input-text-area ref="eTextArea" class="ag-large-text-input"></ag-input-text-area>
+            <div data-node-name="ag-input-text-area" data-ref="eTextArea" class="ag-large-text-input"></div>
         </div>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_1__["RefSelector"])("eTextArea")
@@ -17750,7 +17767,7 @@ var __decorate = (undefined && undefined.__decorate) || function (decorators, ta
 class SelectCellEditor extends _widgets_popupComponent_mjs__WEBPACK_IMPORTED_MODULE_2__["PopupComponent"] {
     constructor() {
         super(/* html */ `<div class="ag-cell-edit-wrapper">
-                <ag-select class="ag-cell-editor" ref="eSelect"></ag-select>
+                <div data-node-name="ag-select" class="ag-cell-editor" data-ref="eSelect"></div>
             </div>`);
         this.startedByEnter = false;
     }
@@ -17837,7 +17854,7 @@ __webpack_require__.r(__webpack_exports__);
 
 class TextCellEditorInput {
     getTemplate() {
-        return /* html */ `<ag-input-text-field class="ag-cell-editor" ref="eInput"></ag-input-text-field>`;
+        return /* html */ `<div data-node-name="ag-input-text-field" class="ag-cell-editor" data-ref="eInput"></div>`;
     }
     init(eInput, params) {
         this.eInput = eInput;
@@ -18264,11 +18281,11 @@ class GroupCellRenderer extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_
     }
 }
 GroupCellRenderer.TEMPLATE = `<span class="ag-cell-wrapper">
-            <span class="ag-group-expanded" ref="eExpanded"></span>
-            <span class="ag-group-contracted" ref="eContracted"></span>
-            <span class="ag-group-checkbox ag-invisible" ref="eCheckbox"></span>
-            <span class="ag-group-value" ref="eValue"></span>
-            <span class="ag-group-child-count" ref="eChildCount"></span>
+            <span class="ag-group-expanded" data-ref="eExpanded"></span>
+            <span class="ag-group-contracted" data-ref="eContracted"></span>
+            <span class="ag-group-checkbox ag-invisible" data-ref="eCheckbox"></span>
+            <span class="ag-group-value" data-ref="eValue"></span>
+            <span class="ag-group-child-count" data-ref="eChildCount"></span>
         </span>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_3__["RefSelector"])('eExpanded')
@@ -18800,7 +18817,7 @@ class GroupCellRendererCtrl extends _context_beanStub_mjs__WEBPACK_IMPORTED_MODU
         }
         const rowDragComp = new _row_rowDragComp_mjs__WEBPACK_IMPORTED_MODULE_10__["RowDragComp"](() => this.params.value, this.params.node);
         this.createManagedBean(rowDragComp, this.context);
-        this.eGui.insertAdjacentElement('afterbegin', rowDragComp.getGui());
+        this.eGui.insertAdjacentHTML('afterbegin', rowDragComp.getGui().outerHTML);
     }
     isUserWantsSelected() {
         const paramsCheckbox = this.params.checkbox;
@@ -19839,7 +19856,7 @@ class CheckboxSelectionComponent extends _widgets_component_mjs__WEBPACK_IMPORTE
     constructor() {
         super(/* html*/ `
             <div class="ag-selection-checkbox" role="presentation">
-                <ag-checkbox role="presentation" ref="eCheckbox"></ag-checkbox>
+                <div data-node-name="ag-checkbox" role="presentation" data-ref="eCheckbox"></div>
             </div>`);
     }
     postConstruct() {
@@ -20698,8 +20715,8 @@ class LoadingCellRenderer extends _widgets_component_mjs__WEBPACK_IMPORTED_MODUL
     }
 }
 LoadingCellRenderer.TEMPLATE = `<div class="ag-loading">
-            <span class="ag-loading-icon" ref="eLoadingIcon"></span>
-            <span class="ag-loading-text" ref="eLoadingText"></span>
+            <span class="ag-loading-icon" data-ref="eLoadingIcon"></span>
+            <span class="ag-loading-text" data-ref="eLoadingText"></span>
         </div>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_1__["RefSelector"])('eLoadingIcon')
@@ -20805,7 +20822,7 @@ __webpack_require__.r(__webpack_exports__);
 
 class NumberCellEditorInput {
     getTemplate() {
-        return /* html */ `<ag-input-number-field class="ag-cell-editor" ref="eInput"></ag-input-number-field>`;
+        return /* html */ `<div data-node-name="ag-input-number-field" class="ag-cell-editor" data-ref="eInput"></div>`;
     }
     init(eInput, params) {
         this.eInput = eInput;
@@ -20878,7 +20895,7 @@ __webpack_require__.r(__webpack_exports__);
 
 class DateCellEditorInput {
     getTemplate() {
-        return /* html */ `<ag-input-date-field class="ag-cell-editor" ref="eInput"></ag-input-date-field>`;
+        return /* html */ `<div data-node-name="ag-input-date-field" class="ag-cell-editor" data-ref="eInput"></div>`;
     }
     init(eInput, params) {
         this.eInput = eInput;
@@ -20941,7 +20958,7 @@ class DateStringCellEditorInput {
         this.getDataTypeService = getDataTypeService;
     }
     getTemplate() {
-        return /* html */ `<ag-input-date-field class="ag-cell-editor" ref="eInput"></ag-input-date-field>`;
+        return /* html */ `<div data-node-name="ag-input-date-field" class="ag-cell-editor" data-ref="eInput"></div>`;
     }
     init(eInput, params) {
         this.eInput = eInput;
@@ -21115,7 +21132,7 @@ class CheckboxCellRenderer extends _widgets_component_mjs__WEBPACK_IMPORTED_MODU
 }
 CheckboxCellRenderer.TEMPLATE = `
         <div class="ag-cell-wrapper ag-checkbox-cell" role="presentation">
-            <ag-checkbox role="presentation" ref="eCheckbox"></ag-checkbox>
+            <div data-node-name="ag-checkbox" role="presentation" data-ref="eCheckbox"></div>
         </div>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_1__["RefSelector"])('eCheckbox')
@@ -21147,7 +21164,7 @@ class CheckboxCellEditor extends _widgets_popupComponent_mjs__WEBPACK_IMPORTED_M
     constructor() {
         super(/* html */ `
             <div class="ag-cell-wrapper ag-cell-edit-wrapper ag-checkbox-edit">
-                <ag-checkbox role="presentation" ref="eCheckbox"></ag-checkbox>
+                <div data-node-name="ag-checkbox" role="presentation" data-ref="eCheckbox"></div>
             </div>`);
     }
     init(params) {
@@ -25602,9 +25619,9 @@ class HeaderFilterCellComp extends _abstractCell_abstractHeaderCellComp_mjs__WEB
     }
 }
 HeaderFilterCellComp.TEMPLATE = `<div class="ag-header-cell ag-floating-filter" role="gridcell" tabindex="-1">
-            <div ref="eFloatingFilterBody" role="presentation"></div>
-            <div class="ag-floating-filter-button ag-hidden" ref="eButtonWrapper" role="presentation">
-                <button type="button" class="ag-button ag-floating-filter-button-button" ref="eButtonShowMainFilter" tabindex="-1"></button>
+            <div data-ref="eFloatingFilterBody" role="presentation"></div>
+            <div class="ag-floating-filter-button ag-hidden" data-ref="eButtonWrapper" role="presentation">
+                <button type="button" class="ag-button ag-floating-filter-button-button" data-ref="eButtonShowMainFilter" tabindex="-1"></button>
             </div>
         </div>`;
 __decorate([
@@ -25672,36 +25689,36 @@ var __decorate = (undefined && undefined.__decorate) || function (decorators, ta
 
 
 const GRID_BODY_TEMPLATE = /* html */ `<div class="ag-root ag-unselectable" role="treegrid">
-        <ag-header-root ref="gridHeader"></ag-header-root>
-        <div class="ag-floating-top" ref="eTop" role="presentation">
-            <ag-row-container ref="topLeftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_LEFT}"></ag-row-container>
-            <ag-row-container ref="topCenterContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_CENTER}"></ag-row-container>
-            <ag-row-container ref="topRightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_RIGHT}"></ag-row-container>
-            <ag-row-container ref="topFullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_FULL_WIDTH}"></ag-row-container>
+        <div data-node-name="ag-header-root" data-ref="gridHeader"></div>
+        <div class="ag-floating-top" data-ref="eTop" role="presentation">
+            <div data-node-name="ag-row-container" data-ref="topLeftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_LEFT}"></div>
+            <div data-node-name="ag-row-container" data-ref="topCenterContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_CENTER}"></div>
+            <div data-node-name="ag-row-container" data-ref="topRightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_RIGHT}"></div>
+            <div data-node-name="ag-row-container" data-ref="topFullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].TOP_FULL_WIDTH}"></div>
         </div>
-        <div class="ag-body" ref="eBody" role="presentation">
-            <div class="ag-body-viewport" ref="eBodyViewport" role="presentation">
-                <ag-row-container ref="leftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].LEFT}"></ag-row-container>
-                <ag-row-container ref="centerContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].CENTER}"></ag-row-container>
-                <ag-row-container ref="rightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].RIGHT}"></ag-row-container>
-                <ag-row-container ref="fullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].FULL_WIDTH}"></ag-row-container>
+        <div class="ag-body" data-ref="eBody" role="presentation">
+            <div class="ag-body-viewport" data-ref="eBodyViewport" role="presentation">
+                <div data-node-name="ag-row-container" data-ref="leftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].LEFT}"></div>
+                <div data-node-name="ag-row-container" data-ref="centerContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].CENTER}"></div>
+                <div data-node-name="ag-row-container" data-ref="rightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].RIGHT}"></div>
+                <div data-node-name="ag-row-container" data-ref="fullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].FULL_WIDTH}"></div>
             </div>
-            <ag-fake-vertical-scroll></ag-fake-vertical-scroll>
+            <div data-node-name="ag-fake-vertical-scroll" ></div>
         </div>
-        <div class="ag-sticky-top" ref="eStickyTop" role="presentation">
-            <ag-row-container ref="stickyTopLeftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_LEFT}"></ag-row-container>
-            <ag-row-container ref="stickyTopCenterContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_CENTER}"></ag-row-container>
-            <ag-row-container ref="stickyTopRightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_RIGHT}"></ag-row-container>
-            <ag-row-container ref="stickyTopFullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_FULL_WIDTH}"></ag-row-container>
+        <div class="ag-sticky-top" data-ref="eStickyTop" role="presentation">
+            <div data-node-name="ag-row-container" data-ref="stickyTopLeftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_LEFT}"></div>
+            <div data-node-name="ag-row-container" data-ref="stickyTopCenterContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_CENTER}"></div>
+            <div data-node-name="ag-row-container" data-ref="stickyTopRightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_RIGHT}"></div>
+            <div data-node-name="ag-row-container" data-ref="stickyTopFullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].STICKY_TOP_FULL_WIDTH}"></div>
         </div>
-        <div class="ag-floating-bottom" ref="eBottom" role="presentation">
-            <ag-row-container ref="bottomLeftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_LEFT}"></ag-row-container>
-            <ag-row-container ref="bottomCenterContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_CENTER}"></ag-row-container>
-            <ag-row-container ref="bottomRightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_RIGHT}"></ag-row-container>
-            <ag-row-container ref="bottomFullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_FULL_WIDTH}"></ag-row-container>
+        <div class="ag-floating-bottom" data-ref="eBottom" role="presentation">
+            <div data-node-name="ag-row-container" data-ref="bottomLeftContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_LEFT}"></div>
+            <div data-node-name="ag-row-container" data-ref="bottomCenterContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_CENTER}"></div>
+            <div data-node-name="ag-row-container" data-ref="bottomRightContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_RIGHT}"></div>
+            <div data-node-name="ag-row-container" data-ref="bottomFullWidthContainer" name="${_rowContainer_rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_6__["RowContainerName"].BOTTOM_FULL_WIDTH}"></div>
         </div>
-        <ag-fake-horizontal-scroll></ag-fake-horizontal-scroll>
-        <ag-overlay-wrapper></ag-overlay-wrapper>
+        <div data-node-name="ag-fake-horizontal-scroll"></div>
+        <div data-node-name="ag-overlay-wrapper"></div>
     </div>`;
 class GridBodyComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_3__["Component"] {
     constructor() {
@@ -33120,13 +33137,13 @@ function templateFactory() {
         name === _rowContainerCtrl_mjs__WEBPACK_IMPORTED_MODULE_3__["RowContainerName"].BOTTOM_CENTER;
     if (centerTemplate) {
         res = /* html */
-            `<div class="${cssClasses.viewport}" ref="eViewport" role="presentation">
-                <div class="${cssClasses.container}" ref="eContainer"></div>
+            `<div class="${cssClasses.viewport}" data-ref="eViewport" role="presentation">
+                <div class="${cssClasses.container}" data-ref="eContainer"></div>
             </div>`;
     }
     else {
         res = /* html */
-            `<div class="${cssClasses.container}" ref="eContainer"></div>`;
+            `<div class="${cssClasses.container}" data-ref="eContainer"></div>`;
     }
     return res;
 }
@@ -34682,7 +34699,7 @@ class HeaderRowContainerComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MO
 HeaderRowContainerComp.PINNED_LEFT_TEMPLATE = `<div class="ag-pinned-left-header" role="presentation"></div>`;
 HeaderRowContainerComp.PINNED_RIGHT_TEMPLATE = `<div class="ag-pinned-right-header" role="presentation"></div>`;
 HeaderRowContainerComp.CENTER_TEMPLATE = `<div class="ag-header-viewport" role="presentation">
-            <div class="ag-header-container" ref="eCenterContainer" role="rowgroup"></div>
+            <div class="ag-header-container" data-ref="eCenterContainer" role="rowgroup"></div>
         </div>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_4__["RefSelector"])('eCenterContainer')
@@ -34860,7 +34877,7 @@ class HeaderCellComp extends _abstractCell_abstractHeaderCellComp_mjs__WEBPACK_I
         };
         this.ctrl.setComp(compProxy, this.getGui(), this.eResize, this.eHeaderCompWrapper);
         const selectAllGui = this.ctrl.getSelectAllGui();
-        this.eResize.insertAdjacentElement('afterend', selectAllGui);
+        this.eResize.insertAdjacentHTML('afterend', selectAllGui.outerHTML);
     }
     destroyHeaderComp() {
         if (this.headerComp) {
@@ -34887,8 +34904,8 @@ class HeaderCellComp extends _abstractCell_abstractHeaderCellComp_mjs__WEBPACK_I
     }
 }
 HeaderCellComp.TEMPLATE = `<div class="ag-header-cell" role="columnheader" tabindex="-1">
-            <div ref="eResize" class="ag-header-cell-resize" role="presentation"></div>
-            <div ref="eHeaderCompWrapper" class="ag-header-cell-comp-wrapper" role="presentation"></div>
+            <div data-ref="eResize" class="ag-header-cell-resize" role="presentation"></div>
+            <div data-ref="eHeaderCompWrapper" class="ag-header-cell-comp-wrapper" role="presentation"></div>
         </div>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_2__["RefSelector"])('eResize')
@@ -34961,7 +34978,7 @@ class HeaderGroupCellComp extends _abstractCell_abstractHeaderCellComp_mjs__WEBP
     }
 }
 HeaderGroupCellComp.TEMPLATE = `<div class="ag-header-group-cell" role="columnheader" tabindex="-1">
-            <div ref="eResize" class="ag-header-cell-resize" role="presentation"></div>
+            <div data-ref="eResize" class="ag-header-cell-resize" role="presentation"></div>
         </div>`;
 __decorate([
     Object(_context_context_mjs__WEBPACK_IMPORTED_MODULE_0__["Autowired"])('userComponentFactory')
@@ -38486,8 +38503,8 @@ class TabbedLayout extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_6__["
     }
     static getTemplate(cssClass) {
         return /* html */ `<div class="ag-tabs ${cssClass}">
-            <div ref="eHeader" role="tablist" class="ag-tabs-header ${cssClass ? `${cssClass}-header` : ''}"></div>
-            <div ref="eBody" role="presentation" class="ag-tabs-body ${cssClass ? `${cssClass}-body` : ''}"></div>
+            <div data-ref="eHeader" role="tablist" class="ag-tabs-header ${cssClass ? `${cssClass}-header` : ''}"></div>
+            <div data-ref="eBody" role="presentation" class="ag-tabs-body ${cssClass ? `${cssClass}-body` : ''}"></div>
         </div>`;
     }
     handleKeyDown(e) {
@@ -41969,11 +41986,11 @@ var __decorate = (undefined && undefined.__decorate) || function (decorators, ta
 
 const TEMPLATE = /* html */ `
     <div class="ag-picker-field" role="presentation">
-        <div ref="eLabel"></div>
-            <div ref="eWrapper" class="ag-wrapper ag-picker-field-wrapper ag-rich-select-value ag-picker-collapsed">
-            <div ref="eDisplayField" class="ag-picker-field-display"></div>
-            <ag-input-text-field ref="eInput" class="ag-rich-select-field-input"></ag-input-text-field>
-            <div ref="eIcon" class="ag-picker-field-icon" aria-hidden="true"></div>
+        <div data-ref="eLabel"></div>
+            <div data-ref="eWrapper" class="ag-wrapper ag-picker-field-wrapper ag-rich-select-value ag-picker-collapsed">
+            <div data-ref="eDisplayField" class="ag-picker-field-display"></div>
+            <div data-node-name="ag-input-text-field" data-ref="eInput" class="ag-rich-select-field-input"></div>
+            <div data-ref="eIcon" class="ag-picker-field-icon" aria-hidden="true"></div>
         </div>
     </div>`;
 class AgRichSelect extends _agPickerField_mjs__WEBPACK_IMPORTED_MODULE_11__["AgPickerField"] {
@@ -42787,7 +42804,7 @@ class VirtualList extends _tabGuardComp_mjs__WEBPACK_IMPORTED_MODULE_5__["TabGua
     }
     static getTemplate(cssIdentifier) {
         return ( /* html */`<div class="ag-virtual-list-viewport ag-${cssIdentifier}-virtual-list-viewport" role="presentation">
-                <div class="ag-virtual-list-container ag-${cssIdentifier}-virtual-list-container" ref="eContainer"></div>
+                <div class="ag-virtual-list-container ag-${cssIdentifier}-virtual-list-container" data-ref="eContainer"></div>
             </div>`);
     }
     getItemHeight() {
@@ -42914,10 +42931,10 @@ class VirtualList extends _tabGuardComp_mjs__WEBPACK_IMPORTED_MODULE_5__["TabGua
         eDiv.appendChild(rowComponent.getGui());
         // keep the DOM order consistent with the order of the rows
         if (this.renderedRows.has(rowIndex - 1)) {
-            this.renderedRows.get(rowIndex - 1).eDiv.insertAdjacentElement('afterend', eDiv);
+            this.renderedRows.get(rowIndex - 1).eDiv.insertAdjacentHTML('afterend', eDiv.outerHTML);
         }
         else if (this.renderedRows.has(rowIndex + 1)) {
-            this.renderedRows.get(rowIndex + 1).eDiv.insertAdjacentElement('beforebegin', eDiv);
+            this.renderedRows.get(rowIndex + 1).eDiv.insertAdjacentHTML('beforebegin', eDiv.outerHTML);
         }
         else {
             this.eContainer.appendChild(eDiv);
@@ -43028,8 +43045,8 @@ class TabGuardComp extends _component_mjs__WEBPACK_IMPORTED_MODULE_0__["Componen
         return tabGuard;
     }
     addTabGuards(topTabGuard, bottomTabGuard) {
-        this.eFocusableElement.insertAdjacentElement('afterbegin', topTabGuard);
-        this.eFocusableElement.insertAdjacentElement('beforeend', bottomTabGuard);
+        this.eFocusableElement.insertAdjacentHTML('afterbegin', topTabGuard.outerHTML);
+        this.eFocusableElement.insertAdjacentHTML('beforeend', bottomTabGuard.outerHTML);
     }
     removeAllChildrenExceptTabGuards() {
         const tabGuards = [this.eTopGuard, this.eBottomGuard];
@@ -43045,7 +43062,7 @@ class TabGuardComp extends _component_mjs__WEBPACK_IMPORTED_MODULE_0__["Componen
         }
         const { eBottomGuard: bottomTabGuard } = this;
         if (bottomTabGuard) {
-            bottomTabGuard.insertAdjacentElement('beforebegin', newChild);
+            bottomTabGuard.insertAdjacentHTML('beforebegin', newChild.outerHTML);
         }
         else {
             super.appendChild(newChild, container);
@@ -43290,10 +43307,10 @@ class AgSlider extends _agAbstractLabel_mjs__WEBPACK_IMPORTED_MODULE_1__["AgAbst
     }
 }
 AgSlider.TEMPLATE = `<div class="ag-slider">
-            <label ref="eLabel"></label>
+            <label data-ref="eLabel"></label>
             <div class="ag-wrapper ag-slider-wrapper">
-                <ag-input-range ref="eSlider"></ag-input-range>
-                <ag-input-number-field ref="eText"></ag-input-number-field>
+                <div data-node-name="ag-input-range" data-ref="eSlider"></div>
+                <div data-node-name="ag-input-number-field" data-ref="eText"></div>
             </div>
         </div>`;
 __decorate([
@@ -43359,15 +43376,15 @@ class AgGroupComponent extends _component_mjs__WEBPACK_IMPORTED_MODULE_0__["Comp
         const cssIdentifier = params.cssIdentifier || 'default';
         const direction = params.direction || 'vertical';
         return /* html */ `<div class="ag-group ag-${cssIdentifier}-group" role="presentation">
-            <div class="ag-group-title-bar ag-${cssIdentifier}-group-title-bar ag-unselectable" ref="eTitleBar" role="button">
-                <span class="ag-group-title-bar-icon ag-${cssIdentifier}-group-title-bar-icon" ref="eGroupOpenedIcon" role="presentation"></span>
-                <span class="ag-group-title-bar-icon ag-${cssIdentifier}-group-title-bar-icon" ref="eGroupClosedIcon" role="presentation"></span>
-                <span ref="eTitle" class="ag-group-title ag-${cssIdentifier}-group-title"></span>
+            <div class="ag-group-title-bar ag-${cssIdentifier}-group-title-bar ag-unselectable" data-ref="eTitleBar" role="button">
+                <span class="ag-group-title-bar-icon ag-${cssIdentifier}-group-title-bar-icon" data-ref="eGroupOpenedIcon" role="presentation"></span>
+                <span class="ag-group-title-bar-icon ag-${cssIdentifier}-group-title-bar-icon" data-ref="eGroupClosedIcon" role="presentation"></span>
+                <span data-ref="eTitle" class="ag-group-title ag-${cssIdentifier}-group-title"></span>
             </div>
-            <div ref="eToolbar" class="ag-group-toolbar ag-${cssIdentifier}-group-toolbar">
-                <ag-checkbox ref="cbGroupEnabled"></ag-checkbox>
+            <div data-ref="eToolbar" class="ag-group-toolbar ag-${cssIdentifier}-group-toolbar">
+                <div data-node-name="ag-checkbox" data-ref="cbGroupEnabled"></div>
             </div>
-            <div ref="eContainer" class="ag-group-container ag-group-container-${direction} ag-${cssIdentifier}-group-container"></div>
+            <div data-ref="eContainer" class="ag-group-container ag-group-container-${direction} ag-${cssIdentifier}-group-container"></div>
         </div>`;
     }
     postConstruct() {
@@ -43717,7 +43734,7 @@ class AgMenuItemComponent extends _component_mjs__WEBPACK_IMPORTED_MODULE_3__["C
         if (!this.params.checked && !this.params.icon && this.params.isCompact) {
             return;
         }
-        const icon = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span ref="eIcon" class="${this.getClassName('part')} ${this.getClassName('icon')}" role="presentation"></span>`);
+        const icon = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span data-ref="eIcon" class="${this.getClassName('part')} ${this.getClassName('icon')}" role="presentation"></span>`);
         if (this.params.checked) {
             icon.appendChild(Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_5__["createIconNoSpan"])('check', this.gridOptionsService));
         }
@@ -43738,7 +43755,7 @@ class AgMenuItemComponent extends _component_mjs__WEBPACK_IMPORTED_MODULE_3__["C
         if (!this.params.name && this.params.isCompact) {
             return;
         }
-        const name = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span ref="eName" class="${this.getClassName('part')} ${this.getClassName('text')}">${this.params.name || ''}</span>`);
+        const name = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span data-ref="eName" class="${this.getClassName('part')} ${this.getClassName('text')}">${this.params.name || ''}</span>`);
         this.getGui().appendChild(name);
     }
     addTooltip() {
@@ -43763,14 +43780,14 @@ class AgMenuItemComponent extends _component_mjs__WEBPACK_IMPORTED_MODULE_3__["C
         if (!this.params.shortcut && this.params.isCompact) {
             return;
         }
-        const shortcut = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span ref="eShortcut" class="${this.getClassName('part')} ${this.getClassName('shortcut')}">${this.params.shortcut || ''}</span>`);
+        const shortcut = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span data-ref="eShortcut" class="${this.getClassName('part')} ${this.getClassName('shortcut')}">${this.params.shortcut || ''}</span>`);
         this.getGui().appendChild(shortcut);
     }
     addSubMenu() {
         if (!this.params.subMenu && this.params.isCompact) {
             return;
         }
-        const pointer = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span ref="ePopupPointer" class="${this.getClassName('part')} ${this.getClassName('popup-pointer')}"></span>`);
+        const pointer = Object(_utils_dom_mjs__WEBPACK_IMPORTED_MODULE_6__["loadTemplate"])(/* html */ `<span data-ref="ePopupPointer" class="${this.getClassName('part')} ${this.getClassName('popup-pointer')}"></span>`);
         const eGui = this.getGui();
         if (this.params.subMenu) {
             const iconName = this.gridOptionsService.get('enableRtl') ? 'smallLeft' : 'smallRight';
@@ -44318,11 +44335,11 @@ class AgPanel extends _component_mjs__WEBPACK_IMPORTED_MODULE_2__["Component"] {
     static getTemplate(config) {
         const cssIdentifier = (config && config.cssIdentifier) || 'default';
         return /* html */ `<div class="ag-panel ag-${cssIdentifier}-panel" tabindex="-1">
-            <div ref="eTitleBar" class="ag-panel-title-bar ag-${cssIdentifier}-panel-title-bar ag-unselectable">
-                <span ref="eTitle" class="ag-panel-title-bar-title ag-${cssIdentifier}-panel-title-bar-title"></span>
-                <div ref="eTitleBarButtons" class="ag-panel-title-bar-buttons ag-${cssIdentifier}-panel-title-bar-buttons"></div>
+            <div data-ref="eTitleBar" class="ag-panel-title-bar ag-${cssIdentifier}-panel-title-bar ag-unselectable">
+                <span data-ref="eTitle" class="ag-panel-title-bar-title ag-${cssIdentifier}-panel-title-bar-title"></span>
+                <div data-ref="eTitleBarButtons" class="ag-panel-title-bar-buttons ag-${cssIdentifier}-panel-title-bar-buttons"></div>
             </div>
-            <div ref="eContentWrapper" class="ag-panel-content-wrapper ag-${cssIdentifier}-panel-content-wrapper"></div>
+            <div data-ref="eContentWrapper" class="ag-panel-content-wrapper ag-${cssIdentifier}-panel-content-wrapper"></div>
         </div>`;
     }
     postConstruct() {
@@ -44422,13 +44439,13 @@ class AgPanel extends _component_mjs__WEBPACK_IMPORTED_MODULE_2__["Component"] {
         button.addCssClass('ag-panel-title-bar-button');
         const eGui = button.getGui();
         if (position === 0) {
-            eTitleBarButtons.insertAdjacentElement('afterbegin', eGui);
+            eTitleBarButtons.insertAdjacentHTML('afterbegin', eGui.outerHTML);
         }
         else if (position === len) {
-            eTitleBarButtons.insertAdjacentElement('beforeend', eGui);
+            eTitleBarButtons.insertAdjacentHTML('beforeend', eGui.outerHTML);
         }
         else {
-            buttons[position - 1].insertAdjacentElement('afterend', eGui);
+            buttons[position - 1].insertAdjacentHTML('afterend', eGui.outerHTML);
         }
         button.setParentComponent(this);
     }
@@ -45059,15 +45076,15 @@ let PopupService = PopupService_1 = class PopupService extends _context_beanStub
             const isPopupAlwaysOnTop = eWrapper.classList.contains('ag-always-on-top');
             if (isPopupAlwaysOnTop) {
                 if (pos !== popupLen - 1) {
-                    Object(_utils_array_mjs__WEBPACK_IMPORTED_MODULE_4__["last"])(alwaysOnTopList).insertAdjacentElement('afterend', eWrapper);
+                    Object(_utils_array_mjs__WEBPACK_IMPORTED_MODULE_4__["last"])(alwaysOnTopList).insertAdjacentHTML('afterend', eWrapper.outerHTML);
                 }
             }
             else if (pos !== popupLen - onTopLength - 1) {
-                alwaysOnTopList[0].insertAdjacentElement('beforebegin', eWrapper);
+                alwaysOnTopList[0].insertAdjacentHTML('beforebegin', eWrapper.outerHTML);
             }
         }
         else if (pos !== popupLen - 1) {
-            Object(_utils_array_mjs__WEBPACK_IMPORTED_MODULE_4__["last"])(popupList).insertAdjacentElement('afterend', eWrapper);
+            Object(_utils_array_mjs__WEBPACK_IMPORTED_MODULE_4__["last"])(popupList).insertAdjacentHTML('afterend', eWrapper.outerHTML);
         }
         while (innerElsScrollMap.length) {
             const currentEl = innerElsScrollMap.pop();
@@ -45130,7 +45147,7 @@ class AgAutocomplete extends _component_mjs__WEBPACK_IMPORTED_MODULE_0__["Compon
     constructor() {
         super(/* html */ `
             <div class="ag-autocomplete" role="presentation">
-                <ag-input-text-field ref="eAutocompleteInput"></ag-input-text-field>
+                <div data-node-name="ag-input-text-field" data-ref="eAutocompleteInput"></div>
             </div>`);
         this.isListOpen = false;
         this.lastPosition = 0;
@@ -45579,7 +45596,7 @@ class AgAutocompleteList extends _popupComponent_mjs__WEBPACK_IMPORTED_MODULE_5_
     }
 }
 AgAutocompleteList.TEMPLATE = `<div class="ag-autocomplete-list-popup">
-            <div ref="eList" class="ag-autocomplete-list"></div>
+            <div data-ref="eList" class="ag-autocomplete-list"></div>
         <div>`;
 __decorate([
     Object(_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_0__["RefSelector"])('eList')
@@ -46594,6 +46611,7 @@ class Grid {
         const api = new GridCoreCreator().create(eGridDiv, gridOptions, (context) => {
             const gridComp = new _gridComp_gridComp_mjs__WEBPACK_IMPORTED_MODULE_20__["GridComp"](eGridDiv);
             const bean = context.createBean(gridComp);
+            
             bean.addDestroyFunc(() => {
                 this.destroy();
             });
@@ -46741,6 +46759,7 @@ class GridCoreCreator {
             { componentName: 'AgFakeVerticalScroll', componentClass: _gridBodyComp_fakeVScrollComp_mjs__WEBPACK_IMPORTED_MODULE_89__["FakeVScrollComp"] },
             { componentName: 'AgAutocomplete', componentClass: _widgets_agAutocomplete_mjs__WEBPACK_IMPORTED_MODULE_93__["AgAutocomplete"] },
         ];
+        // debugger
         const moduleAgStackComps = this.extractModuleEntity(registeredModules, (module) => module.agStackComponents ? module.agStackComponents : []);
         components = components.concat(moduleAgStackComps);
         return components;
@@ -48171,21 +48190,22 @@ class GridComp extends _widgets_tabGuardComp_mjs__WEBPACK_IMPORTED_MODULE_5__["T
     }
     createTemplate() {
 
-        const dropZones = this.ctrl.showDropZones() ? '<ag-grid-header-drop-zones></ag-grid-header-drop-zones>' : '';
-        const sideBar = this.ctrl.showSideBar() ? '<ag-side-bar ref="sideBar"></ag-side-bar>' : '';
-        const statusBar = this.ctrl.showStatusBar() ? '<ag-status-bar ref="statusBar"></ag-status-bar>' : '';
-        const watermark = this.ctrl.showWatermark() ? '<ag-watermark></ag-watermark>' : '';
+        const dropZones = this.ctrl.showDropZones() ? '<div data-node-name="ag-grid-header-drop-zones"></div>' : '';
+        const sideBar = this.ctrl.showSideBar() ? '<div data-node-name="ag-side-bar" data-ref="sideBar"></div>' : '';
+        const statusBar = this.ctrl.showStatusBar() ? '<div data-node-name="ag-status-bar" data-ref="statusBar"></div>' : '';
+        const watermark = this.ctrl.showWatermark() ? '<div data-node-name="ag-watermark"></div>' : '';
         const template = /* html */ `<div class="ag-root-wrapper" role="presentation">
                 ${dropZones}
-                <div class="ag-root-wrapper-body" ref="rootWrapperBody" role="presentation">
-                    <ag-grid-body ref="gridBody"></ag-grid-body>
+                <div class="ag-root-wrapper-body" data-ref="rootWrapperBody" role="presentation">
+                    <div data-node-name="ag-grid-body" data-ref="gridBody"></div>
                     ${sideBar}
                 </div>
                 ${statusBar}
-                <ag-pagination></ag-pagination>
+                <div data-node-name="ag-pagination"></div>
                 ${watermark}
             </div>`;
         return template;
+
     }
     getFocusableElement() {
         return this.eRootWrapperBody;
@@ -50202,10 +50222,12 @@ class PaginationComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_0__
         this.setTemplate(this.getTemplate());
         const { btFirst, btPrevious, btNext, btLast, pageSizeComp } = this;
         this.activateTabIndex([btFirst, btPrevious, btNext, btLast]);
-        btFirst.insertAdjacentElement('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'last' : 'first', this.gridOptionsService));
-        btPrevious.insertAdjacentElement('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'next' : 'previous', this.gridOptionsService));
-        btNext.insertAdjacentElement('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'previous' : 'next', this.gridOptionsService));
-        btLast.insertAdjacentElement('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'first' : 'last', this.gridOptionsService));
+
+        btFirst.insertAdjacentHTML('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'last' : 'first', this.gridOptionsService).outerHTML);
+        btPrevious.insertAdjacentHTML('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'next' : 'previous', this.gridOptionsService).outerHTML);
+        btNext.insertAdjacentHTML('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'previous' : 'next', this.gridOptionsService).outerHTML);
+        btLast.insertAdjacentHTML('afterbegin', Object(_utils_icon_mjs__WEBPACK_IMPORTED_MODULE_4__["createIconNoSpan"])(isRtl ? 'first' : 'last', this.gridOptionsService).outerHTML);
+        
         this.addManagedPropertyListener('pagination', this.onPaginationChanged.bind(this));
         this.addManagedPropertyListener('suppressPaginationPanel', this.onPaginationChanged.bind(this));
         this.addManagedPropertyListeners(['paginationPageSizeSelector', 'paginationAutoPageSize', 'suppressPaginationPanel'], () => this.onPageSizeRelatedOptionsChange());
@@ -50283,27 +50305,28 @@ class PaginationComp extends _widgets_component_mjs__WEBPACK_IMPORTED_MODULE_0__
         const strLast = localeTextFunc('lastPage', 'Last Page');
         const compId = this.getCompId();
         return /* html */ `<div class="ag-paging-panel ag-unselectable" id="ag-${compId}">
-                <ag-page-size-selector ref="pageSizeComp"></ag-page-size-selector>
-                <span class="ag-paging-row-summary-panel" role="status">
-                    <span id="ag-${compId}-first-row" ref="lbFirstRowOnPage" class="ag-paging-row-summary-panel-number"></span>
-                    <span id="ag-${compId}-to">${strTo}</span>
-                    <span id="ag-${compId}-last-row" ref="lbLastRowOnPage" class="ag-paging-row-summary-panel-number"></span>
-                    <span id="ag-${compId}-of">${strOf}</span>
-                    <span id="ag-${compId}-row-count" ref="lbRecordCount" class="ag-paging-row-summary-panel-number"></span>
+            <div data-node-name="ag-page-size-selector" data-ref="pageSizeComp"></div>
+            <span class="ag-paging-row-summary-panel" role="status">
+                <span id="ag-${compId}-first-row" data-ref="lbFirstRowOnPage" class="ag-paging-row-summary-panel-number"></span>
+                <span id="ag-${compId}-to">${strTo}</span>
+                <span id="ag-${compId}-last-row" data-ref="lbLastRowOnPage" class="ag-paging-row-summary-panel-number"></span>
+                <span id="ag-${compId}-of">${strOf}</span>
+                <span id="ag-${compId}-row-count" data-ref="lbRecordCount" class="ag-paging-row-summary-panel-number"></span>
+            </span>
+            <span class="ag-paging-page-summary-panel" role="presentation">
+                <div data-ref="btFirst" class="ag-button ag-paging-button" role="button" aria-label="${strFirst}"></div>
+                <div data-ref="btPrevious" class="ag-button ag-paging-button" role="button" aria-label="${strPrevious}"></div>
+                <span class="ag-paging-description" role="status">
+                    <span id="ag-${compId}-start-page">${strPage}</span>
+                    <span id="ag-${compId}-start-page-number" data-ref="lbCurrent" class="ag-paging-number"></span>
+                    <span id="ag-${compId}-of-page">${strOf}</span>
+                    <span id="ag-${compId}-of-page-number" data-ref="lbTotal" class="ag-paging-number"></span>
                 </span>
-                <span class="ag-paging-page-summary-panel" role="presentation">
-                    <div ref="btFirst" class="ag-button ag-paging-button" role="button" aria-label="${strFirst}"></div>
-                    <div ref="btPrevious" class="ag-button ag-paging-button" role="button" aria-label="${strPrevious}"></div>
-                    <span class="ag-paging-description" role="status">
-                        <span id="ag-${compId}-start-page">${strPage}</span>
-                        <span id="ag-${compId}-start-page-number" ref="lbCurrent" class="ag-paging-number"></span>
-                        <span id="ag-${compId}-of-page">${strOf}</span>
-                        <span id="ag-${compId}-of-page-number" ref="lbTotal" class="ag-paging-number"></span>
-                    </span>
-                    <div ref="btNext" class="ag-button ag-paging-button" role="button" aria-label="${strNext}"></div>
-                    <div ref="btLast" class="ag-button ag-paging-button" role="button" aria-label="${strLast}"></div>
-                </span>
-            </div>`;
+                <div data-ref="btNext" class="ag-button ag-paging-button" role="button" aria-label="${strNext}"></div>
+                <div data-ref="btLast" class="ag-button ag-paging-button" role="button" aria-label="${strLast}"></div>
+            </span>
+        </div>`;
+
     }
     onBtNext() {
         if (!this.nextButtonDisabled) {
@@ -50537,7 +50560,7 @@ class OverlayWrapperComponent extends _widgets_component_mjs__WEBPACK_IMPORTED_M
 OverlayWrapperComponent.TEMPLATE = `
         <div class="ag-overlay" aria-hidden="true">
             <div class="ag-overlay-panel">
-                <div class="ag-overlay-wrapper" ref="eOverlayWrapper"></div>
+                <div class="ag-overlay-wrapper" data-ref="eOverlayWrapper"></div>
             </div>
         </div>`;
 __decorate([
@@ -51963,11 +51986,11 @@ class FakeHScrollComp extends _abstractFakeScrollComp_mjs__WEBPACK_IMPORTED_MODU
     }
 }
 FakeHScrollComp.TEMPLATE = `<div class="ag-body-horizontal-scroll" aria-hidden="true">
-            <div class="ag-horizontal-left-spacer" ref="eLeftSpacer"></div>
-            <div class="ag-body-horizontal-scroll-viewport" ref="eViewport">
-                <div class="ag-body-horizontal-scroll-container" ref="eContainer"></div>
+            <div class="ag-horizontal-left-spacer" data-ref="eLeftSpacer"></div>
+            <div class="ag-body-horizontal-scroll-viewport" data-ref="eViewport">
+                <div class="ag-body-horizontal-scroll-container" data-ref="eContainer"></div>
             </div>
-            <div class="ag-horizontal-right-spacer" ref="eRightSpacer"></div>
+            <div class="ag-horizontal-right-spacer" data-ref="eRightSpacer"></div>
         </div>`;
 __decorate([
     Object(_widgets_componentAnnotations_mjs__WEBPACK_IMPORTED_MODULE_4__["RefSelector"])('eLeftSpacer')
@@ -53200,8 +53223,8 @@ class FakeVScrollComp extends _abstractFakeScrollComp_mjs__WEBPACK_IMPORTED_MODU
     }
 }
 FakeVScrollComp.TEMPLATE = `<div class="ag-body-vertical-scroll" aria-hidden="true">
-            <div class="ag-body-vertical-scroll-viewport" ref="eViewport">
-                <div class="ag-body-vertical-scroll-container" ref="eContainer"></div>
+            <div class="ag-body-vertical-scroll-viewport" data-ref="eViewport">
+                <div class="ag-body-vertical-scroll-container" data-ref="eContainer"></div>
             </div>
         </div>`;
 __decorate([

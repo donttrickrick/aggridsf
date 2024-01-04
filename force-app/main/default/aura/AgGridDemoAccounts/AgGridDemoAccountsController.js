@@ -38,7 +38,7 @@
                 const rowData = JSON.parse(response.getReturnValue());
                 gridOptions.rowData = rowData;
                 var gridDiv = document.querySelector('#myGrid');
-                const grid = new agGrid.Grid(gridDiv, gridOptions);
+                const grid = agGrid.createGrid(gridDiv, gridOptions);
                 grid.gridOptions.api.sizeColumnsToFit();
             }
             else {

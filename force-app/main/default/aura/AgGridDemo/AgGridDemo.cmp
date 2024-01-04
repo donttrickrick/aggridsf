@@ -1,12 +1,14 @@
-<aura:component implements="flexipage:availableForAllPageTypes,force:appHostable" access="global">
+<aura:component implements="flexipage:availableForAllPageTypes,force:appHostable,lightning:availableForFlowScreens" access="global">
 
     <ltng:require afterScriptsLoaded="{!c.doInit}" scripts="{!join(',',
-        $Resource.agGridCommunityJs
+        $Resource.agGridCommunityJs3
         )}" />
 
     <ltng:require styles="{!$Resource.agThemeAlpineCss}" />
 
     <div style="height: 500px; width: 800px;">
         <div id="myGrid" style="height: 100%; width:100%;" class="ag-theme-alpine"></div>
+
+        <lightning:button label="test" onclick="{!c.handleClick}" ></lightning:button>
     </div>
 </aura:component>

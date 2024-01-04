@@ -1,16 +1,17 @@
 ({
     doInit: function (cmp, event, helper) {
+        
+
+        
+    },
+    handleClick: function(cmp, event, helper) {
         const columnDefs = [
-            { field: "make" },
-            { field: "model" },
-            { field: "price" }
+            { headerName: "Make", field: "make" },
         ];
 
         // specify the data
         const rowData = [
-            { make: "Toyota", model: "Celica", price: 35000 },
-            { make: "Ford", model: "Mondeo", price: 32000 },
-            { make: "Porsche", model: "Boxter", price: 72000 }
+            { make: "Toyota" }
         ];
 
         const gridOptions = {
@@ -19,7 +20,7 @@
         };
 
         var gridDiv = document.querySelector('#myGrid');
-        const grid = new agGrid.Grid(gridDiv, gridOptions);
+        const grid = agGrid.createGrid(gridDiv, gridOptions);
         grid.gridOptions.api.sizeColumnsToFit();
     }
 })

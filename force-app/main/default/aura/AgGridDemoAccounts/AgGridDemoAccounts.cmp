@@ -1,7 +1,7 @@
 <aura:component implements="flexipage:availableForAllPageTypes,force:appHostable" controller="LightningAgGridDemoAccountsController" access="global">
 
     <ltng:require afterScriptsLoaded="{!c.doInit}" scripts="{!join(',',
-        $Resource.agGridCommunityJs
+        $Resource.agGridCommunityJs3
         )}" />
 
     <ltng:require styles="{!$Resource.agThemeAlpineCss}" />
